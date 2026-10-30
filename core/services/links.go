@@ -62,3 +62,22 @@ func parseURL(value string) (*url.URL, error) {
 	}
 	return u, nil
 }
+
+func (s *LinkService) Resolve(ctx context.Context, code string) (string, error) {
+	if len(code) != 12 {
+		return "", cerrors.ErrInvalidCode
+	}
+	for _, char := range code {
+		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '-' || char == '_') {
+			return "", cerrors.ErrInvalidCode
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	link, err := s.repository.FindByCode(ctx, code)
+	if err != nil {
+		return "", fmt.Errorf("find link: %w", err)
+	}
+	return link.URL, nil
+}

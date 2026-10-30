@@ -10,6 +10,7 @@ import (
 
 type LinkRepository interface {
 	Save(context.Context, models.Link) error
+	FindByCode(context.Context, string) (models.Link, error)
 }
 
 type CodeGenerator interface {
@@ -18,4 +19,8 @@ type CodeGenerator interface {
 
 type LinkShortener interface {
 	Shorten(context.Context, string) (string, error)
+}
+
+type LinkResolver interface {
+	Resolve(context.Context, string) (string, error)
 }

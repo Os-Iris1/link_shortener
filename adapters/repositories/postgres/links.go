@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	cerrors "shorter/core/errors"
@@ -12,6 +14,7 @@ import (
 
 type Executor interface {
 	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
 type LinkRepository struct {
@@ -33,4 +36,16 @@ func (r *LinkRepository) Save(ctx context.Context, link models.Link) error {
 		return cerrors.ErrCodeConflict
 	}
 	return nil
+}
+
+func (r *LinkRepository) FindByCode(ctx context.Context, code string) (models.Link, error) {
+	link := models.Link{Code: code}
+	err := r.db.QueryRow(ctx, "SELECT original_url FROM links WHERE code = $1", code).Scan(&link.URL)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Link{}, cerrors.ErrLinkNotFound
+	}
+	if err != nil {
+		return models.Link{}, fmt.Errorf("select link: %w", err)
+	}
+	return link, nil
 }

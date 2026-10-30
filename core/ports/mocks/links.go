@@ -41,6 +41,21 @@ func (m *MockLinkRepository) EXPECT() *MockLinkRepositoryMockRecorder {
 	return m.recorder
 }
 
+// FindByCode mocks base method.
+func (m *MockLinkRepository) FindByCode(arg0 context.Context, arg1 string) (models.Link, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByCode", arg0, arg1)
+	ret0, _ := ret[0].(models.Link)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByCode indicates an expected call of FindByCode.
+func (mr *MockLinkRepositoryMockRecorder) FindByCode(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByCode", reflect.TypeOf((*MockLinkRepository)(nil).FindByCode), arg0, arg1)
+}
+
 // Save mocks base method.
 func (m *MockLinkRepository) Save(arg0 context.Context, arg1 models.Link) error {
 	m.ctrl.T.Helper()
@@ -131,4 +146,43 @@ func (m *MockLinkShortener) Shorten(arg0 context.Context, arg1 string) (string, 
 func (mr *MockLinkShortenerMockRecorder) Shorten(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Shorten", reflect.TypeOf((*MockLinkShortener)(nil).Shorten), arg0, arg1)
+}
+
+// MockLinkResolver is a mock of LinkResolver interface.
+type MockLinkResolver struct {
+	ctrl     *gomock.Controller
+	recorder *MockLinkResolverMockRecorder
+	isgomock struct{}
+}
+
+// MockLinkResolverMockRecorder is the mock recorder for MockLinkResolver.
+type MockLinkResolverMockRecorder struct {
+	mock *MockLinkResolver
+}
+
+// NewMockLinkResolver creates a new mock instance.
+func NewMockLinkResolver(ctrl *gomock.Controller) *MockLinkResolver {
+	mock := &MockLinkResolver{ctrl: ctrl}
+	mock.recorder = &MockLinkResolverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLinkResolver) EXPECT() *MockLinkResolverMockRecorder {
+	return m.recorder
+}
+
+// Resolve mocks base method.
+func (m *MockLinkResolver) Resolve(arg0 context.Context, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Resolve", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Resolve indicates an expected call of Resolve.
+func (mr *MockLinkResolverMockRecorder) Resolve(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockLinkResolver)(nil).Resolve), arg0, arg1)
 }
