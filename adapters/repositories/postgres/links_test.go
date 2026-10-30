@@ -47,35 +47,3 @@ func TestLinkRepositorySave(t *testing.T) {
 		})
 	}
 }
-
-func TestLinkRepositoryInitialize(t *testing.T) {
-	failure := errors.New("DDL failed")
-	for _, tt := range []struct {
-		name  string
-		dbErr error
-	}{
-		{"success", nil}, {"failure", failure},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			db, err := pgxmock.NewPool()
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer db.Close()
-			expect := db.ExpectExec("CREATE TABLE IF NOT EXISTS links")
-			if tt.dbErr != nil {
-				expect.WillReturnError(tt.dbErr)
-			} else {
-				expect.WillReturnResult(pgxmock.NewResult("CREATE TABLE", 0))
-			}
-			err = postgres.NewLinkRepository(db).Initialize(context.Background())
-			if !errors.Is(err, tt.dbErr) {
-				t.Fatalf("error = %v, want %v", err, tt.dbErr)
-			}
-			if err := db.ExpectationsWereMet(); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}

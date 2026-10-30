@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(db): схема вынесена из backend в версионированные up/down SQL-миграции в migrate; Compose применяет их перед запуском сервера. [Лог](docs/logs/0007-versioned-sql-migrations.md).
+
 - docs(git): закреплены ветки задач от dev, пользовательский code review перед слиянием и глобальное review перед продвижением версии в stage. [Лог](docs/logs/0006-reviewed-branch-workflow.md).
 
 - feat(links): добавлено создание короткой ссылки через `POST /api/links` с записью в PostgreSQL, Ports & Adapters, тесты gomock/pgxmock и Makefile; перед коммитом обязательны test/race/vet. [Лог](docs/logs/0005-create-short-link.md).

@@ -40,9 +40,6 @@ func run() error {
 		return fmt.Errorf("connect PostgreSQL: %w", err)
 	}
 	repository := postgres.NewLinkRepository(pool)
-	if err := repository.Initialize(startupCtx); err != nil {
-		return err
-	}
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
