@@ -1,6 +1,19 @@
 # Shorter
 
-Сокращатель ссылок на Go (`net/http`) с PostgreSQL и pgx. Реализованы создание коротких ссылок и переход по ним.
+Сокращатель ссылок: Go (`net/http`), PostgreSQL и pgx в backend, JavaScript и React в frontend. Реализованы создание коротких ссылок и переход по ним.
+
+## Структура
+
+```text
+backend/           Go-модуль, cmd/shorter, core, adapters, Dockerfile
+frontend/          React, Vite, JavaScript, nginx, Dockerfile
+migrate/           версионированные SQL-миграции up/down
+docs/              требования, архитектура и логи задач
+docker-compose.yaml
+Makefile
+```
+
+Миграции остаются в корне репозитория; backend не управляет схемой при запуске. Общие команды Make выполняются из корня.
 
 ## Запуск
 
@@ -12,7 +25,7 @@ docker compose -f docker-compose.yaml ps
 curl http://localhost:8080/healthz
 ```
 
-Ожидаемый ответ — `ok`. Backend доступен на `localhost:8080`, PostgreSQL — только внутри сети Compose по адресу `postgres:5432`. Перед backend запускается одноразовый контейнер golang-migrate, который ждёт готовности БД и применяет миграции. Backend стартует только после их успешного выполнения.
+Ожидаемый ответ — `ok`. Интерфейс доступен на **http://localhost:3000**, backend — на `localhost:8080`, PostgreSQL — только внутри сети Compose по адресу `postgres:5432`. Перед backend запускается одноразовый контейнер golang-migrate, который ждёт готовности БД и применяет миграции. Backend стартует только после их успешного выполнения.
 
 Именованный том `postgres_data` сохраняет данные между перезапусками. Остановка без удаления данных:
 
@@ -24,9 +37,25 @@ docker compose -f docker-compose.yaml down
 
 Backend подключается к PostgreSQL через `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`. При запуске проверяет подключение, но не создаёт и не изменяет схему. `/healthz` проверяет только работу HTTP-сервера.
 
+## Интерфейс и разработка frontend
+
+В http://localhost:3000 введите HTTP(S) URL, нажмите «Сократить», скопируйте результат или откройте ссылку. Форма показывает загрузку и ошибки. Если доступ к буферу обмена запрещён, результат выделяется для ручного копирования. nginx отдаёт frontend, проксирует API и переходы в Go backend; CORS не требуется.
+
+Для разработки нужны Node.js 24 LTS и npm:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Откройте http://localhost:5173. Vite проксирует API в backend на `127.0.0.1:8080`; backend можно запустить через `docker compose up --build -d backend` из корня. При необходимости задайте `BASE_URL=http://localhost:5173` перед запуском Compose, чтобы результат открывался через Vite. По умолчанию Compose возвращает ссылки через nginx на порту 3000; для их открытия нужен также запущенный frontend-контейнер.
+
+Сборка: `npm run build` из `frontend`, результат — `frontend/dist`. Предпросмотр сборки: `npm run preview`, backend должен быть запущен. Зависимости закреплены в `package-lock.json`. Из корня также доступны `make frontend-install`, `make frontend-dev`, `make frontend-build`.
+
 ## Миграции
 
-SQL находится в корневой папке `migrate` рядом с `core` и `adapters`. Используется golang-migrate v4.19.1; начальные файлы — `000001_create_links.up.sql` и `000001_create_links.down.sql`. Версия и признак незавершённой миграции сохраняются в таблице `schema_migrations`.
+SQL находится в корневой папке `migrate`. Используется golang-migrate v4.19.1; начальные файлы — `000001_create_links.up.sql` и `000001_create_links.down.sql`. Версия и признак незавершённой миграции сохраняются в таблице `schema_migrations`.
 
 Compose автоматически применяет up-миграции при `up`. Для отдельного запуска:
 
@@ -60,7 +89,7 @@ curl -i http://localhost:8080/api/links -H "Content-Type: application/json" -d '
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/links -ContentType application/json -Body '{"url":"https://example.com/path?q=1"}'
 ```
 
-Ответ: HTTP 201, `{"short_url":"http://localhost:8080/<код>"}`. Публичный адрес задаётся `BASE_URL` в окружении или `.env` для Compose. Значение по умолчанию — `http://localhost:8080`; при изменении пересоздайте backend. Код содержит 12 символов base64url.
+Ответ в Compose: HTTP 201, `{"short_url":"http://localhost:3000/<код>"}`. Публичный адрес задаётся `BASE_URL` в окружении или `.env` для Compose. В Compose значение по умолчанию — `http://localhost:3000` (адрес nginx); при запуске Go напрямую — `http://localhost:8080`. При изменении пересоздайте backend. Существующий `.env` с `BASE_URL` имеет приоритет. Код содержит 12 символов base64url.
 
 Поддерживаются абсолютные HTTP(S) URL без credentials, до 8192 байт. Повторный запрос создаёт отдельную ссылку. Некорректный запрос — 400, Content-Type — 415, тело больше 64 KiB — 413, ошибка сохранения — 500. Все ответы endpoint — JSON.
 
@@ -85,17 +114,18 @@ migrate -path ./migrate -database "postgres://localhost:5432?sslmode=disable" up
 Команда использует имя пользователя, пароль и базу из PG-переменных. Для удалённого сервера укажите его адрес и нужный режим TLS. Затем:
 
 ```sh
+cd backend
 go run ./cmd/shorter
 ```
 
-Для проверок нужны Go, GNU Make и C toolchain для race detector:
+Для проверок нужны Go, GNU Make и C toolchain для race detector. Следующие команды выполняются из корня репозитория:
 
 ```sh
 make generate
 make check
 ```
 
-`make generate` обновляет gomock-моки портов; сгенерированные файлы хранятся в репозитории. Версия mockgen закреплена в go.mod. `make check` выполняет обязательные перед коммитом команды:
+`make generate` обновляет gomock-моки портов; сгенерированные файлы хранятся в репозитории. Версия mockgen закреплена в `backend/go.mod`. `make check` выполняет из `backend` обязательные перед коммитом команды:
 
 ```sh
 go test ./... -cover
@@ -103,6 +133,6 @@ go test -race ./...
 go vet ./...
 ```
 
-Без Make выполните эти команды напрямую. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
+Без Make выполните эти команды напрямую из `backend`. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
 
 Адрес HTTP задаётся через `HTTP_ADDR` (по умолчанию `:8080`).

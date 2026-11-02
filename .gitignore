@@ -1,3 +1,6 @@
 .env
 *.exe
 coverage.out
+backend/shorter
+frontend/node_modules/
+frontend/dist/

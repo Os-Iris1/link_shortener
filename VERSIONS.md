@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).
+
 - feat(links): добавлен переход `GET /<код>` с 302, поддержкой HEAD и обработкой ошибок 400/404/405/500. [Лог](docs/logs/0008-resolve-short-link.md).
 
 - fix(db): схема вынесена из backend в версионированные up/down SQL-миграции в migrate; Compose применяет их перед запуском сервера. [Лог](docs/logs/0007-versioned-sql-migrations.md).

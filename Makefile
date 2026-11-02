@@ -1,21 +1,30 @@
-.PHONY: test race vet check generate build migrate-up migrate-down migrate-version
+.PHONY: test race vet check generate build frontend-install frontend-dev frontend-build migrate-up migrate-down migrate-version
 
 test:
-	go test ./... -cover
+	cd backend && go test ./... -cover
 
 race:
-	go test -race ./...
+	cd backend && go test -race ./...
 
 vet:
-	go vet ./...
+	cd backend && go vet ./...
 
 check: test race vet
 
 generate:
-	go generate ./core/ports
+	cd backend && go generate ./core/ports
 
 build:
-	go build ./cmd/shorter
+	cd backend && go build ./cmd/shorter
+
+frontend-install:
+	cd frontend && npm ci
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
 
 migrate-up:
 	docker compose run --rm migrate up
