@@ -34,7 +34,7 @@ services:
     environment: *postgres-client
     volumes:
       - ./migrate:/migrations:ro
-    # Имя базы и учётные данные берутся из PG*, не из строки URL.
+      
     entrypoint: ["migrate", "-path=/migrations", "-database=postgres://postgres:5432?sslmode=disable"]
     command: ["up"]
     depends_on:

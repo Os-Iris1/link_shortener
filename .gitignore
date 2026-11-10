@@ -4,3 +4,12 @@ coverage.out
 backend/shorter
 frontend/node_modules/
 frontend/dist/
+
+# Локальные инструкции и документация для работы с AI
+.codex/
+AGENTS.md
+/VERSIONS.md
+/docs/tasks.md
+/docs/product.md
+/docs/architecture.md
+/docs/logs/
