@@ -2,5 +2,6 @@
 .codex
 docs
 .env
+.env.*
 *.exe
 coverage*

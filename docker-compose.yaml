@@ -3,7 +3,7 @@ x-postgres-client: &postgres-client
   PGPORT: "5432"
   PGDATABASE: ${POSTGRES_DB:-shorter}
   PGUSER: ${POSTGRES_USER:-shorter}
-  PGPASSWORD: ${POSTGRES_PASSWORD:-shorter_local}
+  PGPASSWORD: ${POSTGRES_PASSWORD:?Задайте непустой POSTGRES_PASSWORD в .env или окружении}
 
 services:
   frontend:
@@ -34,7 +34,7 @@ services:
     environment: *postgres-client
     volumes:
       - ./migrate:/migrations:ro
-      
+    # Имя базы и учётные данные берутся из PG*, не из строки URL.
     entrypoint: ["migrate", "-path=/migrations", "-database=postgres://postgres:5432?sslmode=disable"]
     command: ["up"]
     depends_on:
@@ -46,7 +46,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-shorter}
       POSTGRES_USER: ${POSTGRES_USER:-shorter}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shorter_local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте непустой POSTGRES_PASSWORD в .env или окружении}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

@@ -19,7 +19,22 @@ Makefile
 
 Требуются Docker и Docker Compose:
 
+Сначала создайте корневой `.env`, сохранив существующий файл. В shell:
+
 ```sh
+if [ ! -e .env ]; then cp .env.example .env; fi
+```
+
+В PowerShell:
+
+```powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Откройте `.env` редактором и задайте собственный непустой `POSTGRES_PASSWORD`. В шаблоне пароль пустой: без него Compose завершится с понятной ошибкой до запуска контейнеров. `POSTGRES_DB`, `POSTGRES_USER` и `BASE_URL` можно оставить из шаблона. Затем из корня репозитория (в обеих оболочках):
+
+```sh
+docker compose config --quiet
 docker compose -f docker-compose.yaml up --build -d
 docker compose -f docker-compose.yaml ps
 curl http://localhost:8080/healthz
@@ -33,7 +48,11 @@ curl http://localhost:8080/healthz
 docker compose -f docker-compose.yaml down
 ```
 
-Для локальной разработки используются `POSTGRES_DB=shorter`, `POSTGRES_USER=shorter`, `POSTGRES_PASSWORD=shorter_local`. Значения можно переопределить через окружение или `.env` (не добавляется в Git). Эти настройки предназначены для локального запуска. Изменение переменных не меняет учётные данные уже инициализированной базы в томе.
+Compose автоматически читает корневой `.env`; переменные окружения оболочки имеют приоритет над файлом. Например, `BASE_URL=http://localhost:5173 docker compose up --build -d backend` в shell; в PowerShell сначала `$env:BASE_URL = 'http://localhost:5173'`, затем `docker compose up --build -d backend`. После проверки удалите временное переопределение: `Remove-Item Env:BASE_URL` в PowerShell. Пустое значение пароля из окружения тоже вызывает ошибку, даже если в файле пароль заполнен.
+
+Для буквальных `$` и `#` используйте одинарные кавычки в `.env`: `POSTGRES_PASSWORD='your$own#password'` (это пример синтаксиса, задайте свой пароль). В одинарных кавычках Compose не подставляет `$VAR`, а `#` остаётся частью значения; кавычки в пароль не входят. Одинарную кавычку внутри такого значения экранируйте как `\'`. Для пароля из окружения также используйте одинарные кавычки оболочки. Не вставляйте пароль в URL подключения. `.env` и `.env.*` исключены из Git, кроме безопасного `.env.example`, а также из контекстов сборки backend и frontend. Параметры БД передаются только серверным контейнерам при запуске. Не публикуйте вывод `docker compose config` без `--quiet`: он содержит подставленные значения.
+
+Изменение `.env` **не меняет пароль уже созданной БД** в томе `postgres_data`. Для существующей базы сохраните действующие учётные данные либо отдельно измените пароль пользователя в PostgreSQL и согласуйте конфигурацию. Удаление рабочего тома для обновления пароля не требуется.
 
 Backend подключается к PostgreSQL через `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`. При запуске проверяет подключение, но не создаёт и не изменяет схему. `/healthz` проверяет только работу HTTP-сервера.
 
@@ -105,7 +124,36 @@ curl -i http://localhost:8080/<код>
 
 ## Запуск и проверки Go
 
-Требуется Go 1.26. Для запуска без Docker настройте переменные `PG*` для доступного PostgreSQL (Compose не публикует его порт), установите CLI golang-migrate v4.19.1 и сначала примените SQL из `migrate`:
+Требуется Go 1.26. Go-приложение и CLI migrate не загружают `.env` автоматически. Для запуска без Docker экспортируйте `PG*` для доступного PostgreSQL (Compose не публикует его порт):
+
+| Настройка Compose | Окружение Go и migrate | Значение |
+| --- | --- | --- |
+| `POSTGRES_DB` | `PGDATABASE` | имя базы |
+| `POSTGRES_USER` | `PGUSER` | пользователь |
+| `POSTGRES_PASSWORD` | `PGPASSWORD` | тот же пароль |
+| адрес PostgreSQL | `PGHOST`, `PGPORT` | доступный с хоста адрес и порт |
+| `BASE_URL` | `BASE_URL` | публичный адрес коротких ссылок |
+
+В Compose backend и мигратор получают эти PG-переменные из общего блока, `PGHOST=postgres` и `PGPORT=5432`. Для прямого запуска в shell (пароль замените своим):
+
+```sh
+export PGHOST=localhost PGPORT=5432 PGDATABASE=shorter PGUSER=shorter
+export PGPASSWORD='your$own#password'
+export BASE_URL=http://localhost:8080
+```
+
+В PowerShell:
+
+```powershell
+$env:PGHOST = 'localhost'
+$env:PGPORT = '5432'
+$env:PGDATABASE = 'shorter'
+$env:PGUSER = 'shorter'
+$env:PGPASSWORD = 'your$own#password'
+$env:BASE_URL = 'http://localhost:8080'
+```
+
+Не выполняйте `. .env` / `source .env`: синтаксис Compose-файла окружения не равен синтаксису shell. Установите CLI golang-migrate v4.19.1 и сначала примените SQL из `migrate`:
 
 ```sh
 migrate -path ./migrate -database "postgres://localhost:5432?sslmode=disable" up
@@ -134,5 +182,15 @@ go vet ./...
 ```
 
 Без Make выполните эти команды напрямую из `backend`. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
+
+Проверка конфигурации CFG-001 из корня в PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-env.ps1
+```
+
+Скрипт проверяет обязательный пароль, специальные символы и приоритет окружения, собирает образы, применяет миграции и проверяет создание ссылки и редирект через nginx. Используется отдельный Compose-проект со случайным портом и собственным томом; в конце удаляются только его ресурсы. Рабочий `.env` не загружается. Требуется Docker Compose v2.24.4 или новее для `!override` в тестовой конфигурации; Windows PowerShell 5.1 или PowerShell 7. В shell с установленным PowerShell 7 используйте `pwsh -NoProfile -File scripts/test-env.ps1`.
+
+Если Docker Desktop не может смонтировать каталог `migrate` с хоста, для этой проверки доступен параметр `-CopyMigrations`: те же SQL-файлы копируются через Docker API в отдельный тестовый том. Этот вариант проверяет окружение и HTTP-сценарий, но не доступность штатного bind mount; для обычного запуска Compose доступ к каталогу миграций нужно настроить отдельно.
 
 Адрес HTTP задаётся через `HTTP_ADDR` (по умолчанию `:8080`).
