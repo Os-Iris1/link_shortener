@@ -68,43 +68,52 @@ function App() {
   }
 
   return (
-    <div className="page">
-      <header className="header">
-        <a className="brand" href="/" aria-label="Shorter — главная"><span className="brand-mark" aria-hidden="true">↗</span>shorter<span className="brand-dot">.</span></a>
-        <span className="header-note">Меньше символов. Больше смысла.</span>
-      </header>
-      <main>
-        <div className="eyebrow"><span /> ПРОСТО ССЫЛКА. ТОЛЬКО КОРОЧЕ.</div>
-        <h1>Длинные ссылки.<br /><span>Короткое решение.</span></h1>
-        <p className="intro">Вставьте ссылку, сократите и поделитесь.<br />Всё нужное — в одном простом действии.</p>
-        <section className="card" aria-labelledby="form-title">
-          <h2 id="form-title">Сократить ссылку</h2>
-          <form onSubmit={shorten} aria-busy={busy}>
-            <label htmlFor="url">Ваша длинная ссылка</label>
-            <div className="input-row">
-              <input id="url" type="url" inputMode="url" placeholder="https://example.com/очень-длинная-ссылка" value={url} onChange={(event) => setURL(event.target.value)} disabled={busy} required aria-describedby={error ? 'url-hint form-error' : 'url-hint'} aria-invalid={Boolean(error)} autoComplete="url" />
-              <button type="submit" disabled={busy}>{busy ? 'Сокращаем…' : 'Сократить'}<span aria-hidden="true">↗</span></button>
-            </div>
-            <p id="url-hint" className="hint">Поддерживаются ссылки с http:// и https://</p>
-          </form>
-          {error && <p id="form-error" className="error" role="alert">{error}</p>}
-          <div aria-live="polite" aria-atomic="true">
-            {shortURL && <div className="result">
-              <label htmlFor="short-url">Готово! Ваша короткая ссылка</label>
-              <div className="input-row">
-                <input ref={resultInput} id="short-url" value={shortURL} readOnly onFocus={(event) => event.target.select()} />
-                <button type="button" className="copy-button" onClick={copy}>Копировать</button>
-              </div>
-              <div className="result-footer"><a href={shortURL} target="_blank" rel="noreferrer">Открыть ссылку ↗</a><span>{copyMessage}</span></div>
-            </div>}
-          </div>
-        </section>
-        <div className="steps" aria-label="Как это работает">
-          <div><span>01</span>Вставьте URL</div><span className="step-line" aria-hidden="true" /><div><span>02</span>Получите короткий</div><span className="step-line" aria-hidden="true" /><div><span>03</span>Поделитесь</div>
+    <main className="shortener" aria-label="Сокращение ссылок">
+      <form onSubmit={shorten} aria-busy={busy}>
+        <div className="input-row">
+          <input
+            id="url"
+            aria-label="Исходная ссылка"
+            type="url"
+            inputMode="url"
+            placeholder="https://example.com"
+            value={url}
+            onChange={(event) => setURL(event.target.value)}
+            disabled={busy}
+            required
+            aria-describedby={error ? 'form-error' : undefined}
+            aria-invalid={Boolean(error)}
+            autoComplete="url"
+          />
+          <button type="submit" disabled={busy} aria-label={busy ? 'Сокращение ссылки' : 'Сократить ссылку'} title="Сократить ссылку">
+            <span aria-hidden="true">{busy ? '…' : '→'}</span>
+          </button>
         </div>
-      </main>
-      <footer><span>shorter.</span><span>Хорошим ссылкам не нужна длина.</span></footer>
-    </div>
+      </form>
+      <div className="input-row result">
+        <input
+          ref={resultInput}
+          id="short-url"
+          aria-label="Короткая ссылка"
+          placeholder="Короткая ссылка"
+          value={shortURL}
+          readOnly
+          onFocus={(event) => event.target.select()}
+        />
+        <button type="button" onClick={copy} disabled={!shortURL} aria-label="Копировать ссылку" title="Копировать ссылку">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            {copyMessage === 'Ссылка скопирована'
+              ? <path d="m5 12 4 4L19 6" />
+              : <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></>}
+          </svg>
+        </button>
+        {shortURL && <a className="icon-button" href={shortURL} target="_blank" rel="noreferrer" aria-label="Открыть ссылку" title="Открыть ссылку">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5" /></svg>
+        </a>}
+      </div>
+      <span className="sr-only" role="status">{shortURL ? (copyMessage || 'Короткая ссылка готова') : ''}</span>
+      {error && <p id="form-error" className="error" role="alert">{error}</p>}
+    </main>
   );
 }
 
