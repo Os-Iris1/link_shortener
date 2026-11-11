@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(frontend): Vite dev/preview передают query коротких ссылок backend; добавлена регрессия реальных proxy-серверов. [Лог](docs/logs/0015-vite-link-query.md).
+
 - chore(config): добавлены `.env.example`, обязательный пароль PostgreSQL без значения по умолчанию в Compose и инструкции окружения. [Лог](docs/logs/0011-env-configuration.md).
 
 - feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).

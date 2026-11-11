@@ -72,6 +72,8 @@ npm run dev
 
 Сборка: `npm run build` из `frontend`, результат — `frontend/dist`. Предпросмотр сборки: `npm run preview`, backend должен быть запущен. Зависимости закреплены в `package-lock.json`. Из корня также доступны `make frontend-install`, `make frontend-dev`, `make frontend-build`.
 
+Проверка маршрутизации Vite: `npm run test:proxy` из `frontend`. Тест запускает настоящие dev и preview с временным backend, проверяет короткие ссылки с query и без него, GET/HEAD, API, healthz и HTML. Используются свободные локальные порты и временная сборка; отдельный рабочий backend не требуется.
+
 ## Миграции
 
 SQL находится в корневой папке `migrate`. Используется golang-migrate v4.19.1; начальные файлы — `000001_create_links.up.sql` и `000001_create_links.down.sql`. Версия и признак незавершённой миграции сохраняются в таблице `schema_migrations`.
