@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(links): порт исходного URL и BASE_URL проверяется в диапазоне 1–65535 до обращения к хранилищу. [Лог](docs/logs/0014-url-port-validation.md).
+
 - chore(config): добавлены `.env.example`, обязательный пароль PostgreSQL без значения по умолчанию в Compose и инструкции окружения. [Лог](docs/logs/0011-env-configuration.md).
 
 - feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).
