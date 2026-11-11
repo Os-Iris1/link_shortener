@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(frontend): результат копирования и инструкция при отказе Clipboard API видны пользователю и доступны скринридеру. [Лог](docs/logs/0016-clipboard-feedback.md).
+
 - chore(config): добавлены `.env.example`, обязательный пароль PostgreSQL без значения по умолчанию в Compose и инструкции окружения. [Лог](docs/logs/0011-env-configuration.md).
 
 - feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).
