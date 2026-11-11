@@ -2,6 +2,8 @@
 
 Backend использует Go: `net/http` для HTTP, `log/slog` для логов, pgx/v5 для PostgreSQL. Точка входа `backend/cmd/shorter` собирает зависимости, проверяет соединение с БД и запускает HTTP-сервер. При остановке сервер завершает активные запросы перед закрытием пула.
 
+HTTP-маршруты собираются в `adapters/handlers.NewRouter`, который используется точкой входа и тестами. Для точного `/api/links` зарегистрирован JSON-fallback неподдерживаемых методов с 405 и Allow: POST; HEAD обрабатывается по HTTP-семантике без тела. Подробнее: [BUG-006](logs/0017-api-method-errors.md).
+
 Go-модуль и Dockerfile находятся в `backend`; пути пакетов и импорты `shorter/...` сохранены. `frontend` содержит независимый npm-проект на JavaScript, React и Vite. SQL-миграции остаются в корневом `migrate`, общие Compose и Makefile — в корне.
 
 Структура Ports & Adapters внутри backend:

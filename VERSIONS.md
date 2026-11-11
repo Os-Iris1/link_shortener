@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(api): неподдерживаемые методы /api/links возвращают согласованный JSON 405 с Allow: POST; HEAD проверяется через HTTP-сервер. [Лог](docs/logs/0017-api-method-errors.md).
+
 - chore(config): добавлены `.env.example`, обязательный пароль PostgreSQL без значения по умолчанию в Compose и инструкции окружения. [Лог](docs/logs/0011-env-configuration.md).
 
 - feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).

@@ -112,6 +112,8 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/links -ContentType
 
 Поддерживаются абсолютные HTTP(S) URL без credentials, до 8192 байт. Повторный запрос создаёт отдельную ссылку. Некорректный запрос — 400, Content-Type — 415, тело больше 64 KiB — 413, ошибка сохранения — 500. Все ответы endpoint — JSON.
 
+Неподдерживаемые методы на `/api/links` возвращают 405, `Allow: POST` и JSON `{"error":"method not allowed"}` с `Content-Type: application/json; charset=utf-8`. Для HEAD возвращаются те же статус и заголовки без тела. Это правило применяется к точному endpoint `/api/links`, включая запросы с query; ошибки других маршрутов не меняются.
+
 ## Переход по короткой ссылке
 
 Откройте `short_url`, полученный при создании ссылки, либо проверьте ответ без автоматического перехода:
