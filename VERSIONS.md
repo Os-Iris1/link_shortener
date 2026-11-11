@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix(proxy): увеличены и согласованы буферы nginx для предельных ASCII/Unicode редиректов; добавлена HTTP-регрессия. [Лог](docs/logs/0012-nginx-redirect-buffers.md).
+
 - chore(config): добавлены `.env.example`, обязательный пароль PostgreSQL без значения по умолчанию в Compose и инструкции окружения. [Лог](docs/logs/0011-env-configuration.md).
 
 - feat(frontend): Go-модуль выделен в backend, добавлен минимальный frontend на JavaScript и React с сокращением, копированием и открытием ссылок; Compose запускает nginx, общие команды и документация обновлены. [Лог](docs/logs/0009-backend-frontend.md).
