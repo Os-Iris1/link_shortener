@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, stage]
+  pull_request:
+    branches: [dev, stage]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  backend:
+    name: CI backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Install golangci-lint
+        run: |
+          version=$(tr -d '\r\n' < .golangci-version)
+          curl --fail --silent --show-error --location --retry 3 \
+            https://golangci-lint.run/install.sh -o "$RUNNER_TEMP/golangci-install.sh"
+          sh "$RUNNER_TEMP/golangci-install.sh" -b "$RUNNER_TEMP/bin" "v$version"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Check Go
+        run: |
+          mkdir -p reports
+          make fmt-check lint-go check 2>&1 | tee reports/backend.log
+      - name: Preserve backend failure log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-${{ github.sha }}
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend:
+    name: CI frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.14.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+      - name: Check frontend
+        run: |
+          mkdir -p reports
+          {
+            make lint-frontend
+            npm --prefix frontend run test:proxy
+            make frontend-build
+          } 2>&1 | tee reports/frontend.log
+      - name: Preserve frontend failure log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  compose:
+    name: CI compose config
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Validate Compose with disposable parameters
+        env:
+          POSTGRES_DB: ci_shorter
+          POSTGRES_USER: ci_shorter
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+          BASE_URL: http://localhost:3000
+        run: docker compose --env-file /dev/null config --quiet
