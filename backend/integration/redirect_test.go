@@ -65,7 +65,7 @@ func TestLongRedirects(t *testing.T) {
 			var expected strings.Builder
 			for _, b := range []byte(tc.original) {
 				if b >= 128 {
-					fmt.Fprintf(&expected, "%%%02X", b)
+					fmt.Fprintf(&expected, "%%%02x", b)
 				} else {
 					expected.WriteByte(b)
 				}
