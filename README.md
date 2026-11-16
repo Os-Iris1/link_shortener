@@ -184,3 +184,5 @@ go vet ./...
 Без Make выполните эти команды напрямую из `backend`. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
 
 Адрес HTTP задаётся через `HTTP_ADDR` (по умолчанию `:8080`).
+
+Регрессия длинных редиректов через nginx запускается из `backend` на отдельном тестовом Compose-окружении: `SHORTER_TEST_PROXY_URL=http://127.0.0.1:3000 go test ./integration -run TestLongRedirects -count=1 -v`. В PowerShell сначала задайте `$env:SHORTER_TEST_PROXY_URL = 'http://127.0.0.1:3000'`, затем выполните ту же команду `go test`. Укажите фактический порт тестового nginx: проверка создаёт записи в БД. Без переменной этот интеграционный тест пропускается. Проверяются POST и GET/HEAD для ASCII и Unicode URL длиной 8192 байт, точный Location и отказ для URL сверх лимита. Буфер заголовка nginx рассчитан на увеличение Location до 24576 байт после percent-encoding.
