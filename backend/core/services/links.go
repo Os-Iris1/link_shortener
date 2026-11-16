@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
 	cerrors "shorter/core/errors"
@@ -58,6 +59,14 @@ func parseURL(value string) (*url.URL, error) {
 	}
 	u, err := url.Parse(value)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return nil, cerrors.ErrInvalidURL
+	}
+	if port := u.Port(); port != "" {
+		number, err := strconv.ParseUint(port, 10, 16)
+		if err != nil || number == 0 {
+			return nil, cerrors.ErrInvalidURL
+		}
+	} else if strings.HasSuffix(u.Host, ":") {
 		return nil, cerrors.ErrInvalidURL
 	}
 	return u, nil
