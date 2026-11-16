@@ -11,6 +11,22 @@ vet:
 
 check: test race vet
 
+.PHONY: lint lint-go lint-frontend fmt-check fmt
+
+lint: lint-go lint-frontend
+
+lint-go:
+	cd backend && golangci-lint run --config ../.golangci.yml ./...
+
+lint-frontend:
+	cd frontend && npm run lint
+
+fmt-check:
+	go run ./scripts/go-format.go
+
+fmt:
+	go run ./scripts/go-format.go --write
+
 generate:
 	cd backend && go generate ./core/ports
 

@@ -77,7 +77,8 @@ func (s *LinkService) Resolve(ctx context.Context, code string) (string, error) 
 		return "", cerrors.ErrInvalidCode
 	}
 	for _, char := range code {
-		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '-' || char == '_') {
+		valid := char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '-' || char == '_'
+		if !valid {
 			return "", cerrors.ErrInvalidCode
 		}
 	}

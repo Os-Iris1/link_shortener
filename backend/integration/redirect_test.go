@@ -42,7 +42,11 @@ func TestLongRedirects(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer response.Body.Close()
+			defer func() {
+				if err := response.Body.Close(); err != nil {
+					t.Errorf("close response body: %v", err)
+				}
+			}()
 			if response.StatusCode != tc.status {
 				t.Fatalf("POST status = %d, want %d", response.StatusCode, tc.status)
 			}
@@ -80,7 +84,11 @@ func TestLongRedirects(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					defer redirect.Body.Close()
+					defer func() {
+						if err := redirect.Body.Close(); err != nil {
+							t.Errorf("close response body: %v", err)
+						}
+					}()
 					if redirect.StatusCode != http.StatusFound {
 						t.Fatalf("status = %d, want 302", redirect.StatusCode)
 					}

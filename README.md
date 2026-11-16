@@ -130,6 +130,42 @@ curl -i http://localhost:8080/<код>
 
 ## Запуск и проверки Go
 
+### Статический анализ и форматирование
+
+Используется golangci-lint **2.12.2** (версия закреплена в `.golangci-version`),
+собранный Go не ниже версии модуля. Установка Linux по официальному установщику:
+
+```sh
+curl -sSfL https://golangci-lint.run/install.sh -o /tmp/shorter-golangci-install.sh
+sh /tmp/shorter-golangci-install.sh -b "$HOME/.local/bin" v2.12.2
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+На Windows установите архив `golangci-lint-2.12.2-windows-amd64.zip` из
+[официального релиза](https://github.com/golangci/golangci-lint/releases/tag/v2.12.2),
+распакуйте и добавьте каталог с exe в PATH. Проверьте `golangci-lint version`.
+Правила: govet, staticcheck, errcheck, ineffassign и unused; тесты проверяются,
+генерируемый код распознаётся по стандартному заголовку. Схема конфигурации:
+`golangci-lint config verify --config .golangci.yml` из корня.
+
+После `npm ci` в frontend из корня доступны команды (GNU Make на Windows и Linux):
+
+```sh
+make lint-go
+make lint-frontend
+make lint
+make fmt-check
+make fmt
+```
+
+`fmt-check` проверяет Go без записи; CRLF checkout в Windows допускается.
+`fmt` явно применяет gofmt. ESLint проверяет исходники, Vite-конфигурацию и тесты,
+используя recommended-правила JavaScript, React и React Hooks. Версии npm-пакетов
+закреплены в package.json и package-lock.json; `npm run lint` из frontend
+доступен и без Make (в PowerShell при блокировке npm.ps1 используйте `npm.cmd`).
+Проверки не применяют автоматические исправления. Линтеры дополняют `make check`,
+который по-прежнему запускает обязательные test/cover, race и vet.
+
 Требуется Go 1.26. Go-приложение и CLI migrate не загружают `.env` автоматически. Для запуска без Docker экспортируйте `PG*` для доступного PostgreSQL (Compose не публикует его порт):
 
 | Настройка Compose | Окружение Go и migrate | Значение |
