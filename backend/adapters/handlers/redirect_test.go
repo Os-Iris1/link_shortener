@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -56,8 +55,7 @@ func TestRedirect(t *testing.T) {
 			if method == "" {
 				method = "GET"
 			}
-			mux := http.NewServeMux()
-			mux.HandleFunc("GET /{code}", handlers.Redirect(service))
+			mux := handlers.NewRouter(nil, service)
 			response := httptest.NewRecorder()
 			mux.ServeHTTP(response, httptest.NewRequest(method, tt.path, nil))
 			if response.Code != tt.status {

@@ -48,20 +48,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	linkHandler := handlers.NewLinkHandler(service)
 	addr := os.Getenv("HTTP_ADDR")
 	if addr == "" {
 		addr = ":8080"
 	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/links", linkHandler.Shorten)
-	mux.HandleFunc("GET /{code}", handlers.Redirect(service))
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte("ok\n"))
-	})
 	server := &http.Server{
-		Addr: addr, Handler: mux,
+		Addr: addr, Handler: handlers.NewRouter(service, service),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

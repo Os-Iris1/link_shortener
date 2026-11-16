@@ -55,14 +55,10 @@ func TestShorten(t *testing.T) {
 			req := httptest.NewRequest(method, "/api/links", strings.NewReader(tt.body))
 			req.Header.Set("Content-Type", contentType)
 			response := httptest.NewRecorder()
-			mux := http.NewServeMux()
-			mux.HandleFunc("POST /api/links", handlers.NewLinkHandler(service).Shorten)
+			mux := handlers.NewRouter(service, nil)
 			mux.ServeHTTP(response, req)
 			if response.Code != tt.status {
 				t.Fatalf("status = %d, want %d: %s", response.Code, tt.status, response.Body.String())
-			}
-			if tt.status == 405 {
-				return
 			}
 			var body map[string]string
 			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
