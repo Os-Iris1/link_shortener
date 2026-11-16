@@ -111,7 +111,7 @@ function App() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5" /></svg>
         </a>}
       </div>
-      <span className="sr-only" role="status">{shortURL ? (copyMessage || 'Короткая ссылка готова') : ''}</span>
+      <p className={copyMessage ? 'copy-status' : 'sr-only'} role="status" aria-atomic="true">{shortURL ? (copyMessage || 'Короткая ссылка готова') : ''}</p>
       {error && <p id="form-error" className="error" role="alert">{error}</p>}
     </main>
   );
