@@ -1,5 +1,30 @@
 # Shorter
 
+## GitHub Actions
+
+Workflow `.github/workflows/ci.yaml` запускается для push и pull request в
+`dev`/`stage`, а также вручную. Отдельные задания проверяют Go (gofmt,
+golangci-lint, test/cover, race, vet), frontend (ESLint, Vite proxy tests,
+сборка) и синтаксис Docker Compose с тестовыми параметрами без локального .env.
+Используются Ubuntu 24.04, Go из backend/go.mod, Node 24.14.0 и golangci-lint
+из .golangci-version. Версии внешних Actions закреплены SHA; кеши используют
+backend/go.sum и frontend/package-lock.json. При ошибке проверок сохраняются
+логи с ревизией в имени артефакта на 7 дней; ошибки установки видны в журнале Actions.
+
+`.golangci.yml` содержит правила Go-линтера, а `ci.yaml` описывает его запуск
+и остальные проверки на runner. Полные контейнерные и браузерные интеграции
+CI-002 пока не подключены: Compose здесь проверяет конфигурацию без запуска
+сервисов, а TestLongRedirects без SHORTER_TEST_PROXY_URL явно пропускается.
+Локальная проверка workflow: `actionlint .github/workflows/ci.yaml`.
+
+Для подключения загрузите принятую ветку в GitHub и убедитесь, что Actions
+разрешён в Settings → Actions → General. Первый удалённый запуск ещё требуется
+выполнить и проверить во вкладке Actions. После успешного запуска можно назначить
+`CI backend`, `CI frontend`, `CI compose config` обязательными проверками для
+dev/stage через Settings → Rules → Rulesets либо Branch protection, сохранив
+пользовательское review. Ручной запуск workflow_dispatch доступен после появления
+workflow в default branch. Автоматического слияния и развёртывания в workflow нет.
+
 Сокращатель ссылок: Go (`net/http`), PostgreSQL и pgx в backend, JavaScript и React в frontend. Реализованы создание коротких ссылок и переход по ним.
 
 ## Структура
