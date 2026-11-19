@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"shorter/adapters/handlers/dto"
 	cerrors "shorter/core/errors"
@@ -14,7 +13,7 @@ import (
 
 func Redirect(service ports.LinkResolver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), serviceTimeout)
 		defer cancel()
 		originalURL, err := service.Resolve(ctx, r.PathValue("code"))
 		switch {
@@ -26,7 +25,8 @@ func Redirect(service ports.LinkResolver) http.HandlerFunc {
 			slog.Error("Не удалось получить ссылку", "error", err)
 			writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{Error: "internal server error"})
 		default:
-			http.Redirect(w, r, originalURL, http.StatusFound)
+			// URL shortening intentionally redirects to the stored, validated HTTP(S) destination.
+			http.Redirect(w, r, originalURL, http.StatusFound) //nolint:gosec // G710: the redirect is the endpoint contract.
 		}
 	}
 }

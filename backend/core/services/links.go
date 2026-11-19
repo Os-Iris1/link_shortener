@@ -13,7 +13,11 @@ import (
 	"shorter/core/ports"
 )
 
-const maxAttempts = 5
+const (
+	maxAttempts = 5
+	decimalBase = 10
+	portBitSize = 16
+)
 
 type LinkService struct {
 	repository ports.LinkRepository
@@ -54,7 +58,7 @@ func (s *LinkService) Shorten(ctx context.Context, originalURL string) (string, 
 }
 
 func parseURL(value string) (*url.URL, error) {
-	if len(value) == 0 || len(value) > 8192 {
+	if len(value) == 0 || len(value) > models.MaxURLBytes {
 		return nil, cerrors.ErrInvalidURL
 	}
 	u, err := url.Parse(value)
@@ -62,7 +66,7 @@ func parseURL(value string) (*url.URL, error) {
 		return nil, cerrors.ErrInvalidURL
 	}
 	if port := u.Port(); port != "" {
-		number, err := strconv.ParseUint(port, 10, 16)
+		number, err := strconv.ParseUint(port, decimalBase, portBitSize)
 		if err != nil || number == 0 {
 			return nil, cerrors.ErrInvalidURL
 		}
@@ -73,7 +77,7 @@ func parseURL(value string) (*url.URL, error) {
 }
 
 func (s *LinkService) Resolve(ctx context.Context, code string) (string, error) {
-	if len(code) != 12 {
+	if len(code) != models.CodeLength {
 		return "", cerrors.ErrInvalidCode
 	}
 	for _, char := range code {
