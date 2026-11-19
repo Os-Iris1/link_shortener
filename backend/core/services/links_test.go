@@ -187,6 +187,10 @@ func TestLinkServiceResolve(t *testing.T) {
 		{name: "slash", code: "abcdefghijk/", wantErr: cerrors.ErrInvalidCode},
 		{name: "space", code: "abcdefghijk ", wantErr: cerrors.ErrInvalidCode},
 		{name: "unicode", code: "abcdefghijя", wantErr: cerrors.ErrInvalidCode},
+		{name: "trailing newline", code: "abcdefghijkl\n", wantErr: cerrors.ErrInvalidCode},
+		{name: "embedded newline", code: "abcde\nghijkl", wantErr: cerrors.ErrInvalidCode},
+		{name: "padding", code: "abcdefghijk=", wantErr: cerrors.ErrInvalidCode},
+		{name: "base64 plus", code: "abcdefghijk+", wantErr: cerrors.ErrInvalidCode},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()

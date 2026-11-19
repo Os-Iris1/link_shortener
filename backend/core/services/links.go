@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,9 +21,10 @@ const (
 )
 
 type LinkService struct {
-	repository ports.LinkRepository
-	generator  ports.CodeGenerator
-	baseURL    string
+	repository  ports.LinkRepository
+	generator   ports.CodeGenerator
+	baseURL     string
+	codePattern *regexp.Regexp
 }
 
 func NewLinkService(repository ports.LinkRepository, generator ports.CodeGenerator, baseURL string) (*LinkService, error) {
@@ -30,7 +32,12 @@ func NewLinkService(repository ports.LinkRepository, generator ports.CodeGenerat
 	if err != nil || u.RawQuery != "" || u.ForceQuery || strings.Contains(baseURL, "#") {
 		return nil, fmt.Errorf("invalid BASE_URL: %w", cerrors.ErrInvalidURL)
 	}
-	return &LinkService{repository: repository, generator: generator, baseURL: strings.TrimRight(baseURL, "/")}, nil
+	return &LinkService{
+		repository:  repository,
+		generator:   generator,
+		baseURL:     strings.TrimRight(baseURL, "/"),
+		codePattern: regexp.MustCompile(fmt.Sprintf(`\A[A-Za-z0-9_-]{%d}\z`, models.CodeLength)),
+	}, nil
 }
 
 func (s *LinkService) Shorten(ctx context.Context, originalURL string) (string, error) {
@@ -77,14 +84,8 @@ func parseURL(value string) (*url.URL, error) {
 }
 
 func (s *LinkService) Resolve(ctx context.Context, code string) (string, error) {
-	if len(code) != models.CodeLength {
+	if !s.codePattern.MatchString(code) {
 		return "", cerrors.ErrInvalidCode
-	}
-	for _, char := range code {
-		valid := char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '-' || char == '_'
-		if !valid {
-			return "", cerrors.ErrInvalidCode
-		}
 	}
 	if err := ctx.Err(); err != nil {
 		return "", err
