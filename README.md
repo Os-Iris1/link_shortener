@@ -183,8 +183,9 @@ make fmt-check
 make fmt
 ```
 
-`fmt-check` проверяет Go без записи; CRLF checkout в Windows допускается.
-`fmt` явно применяет gofmt. ESLint проверяет исходники, Vite-конфигурацию и тесты,
+`fmt-check` проверяет формат через `golangci-lint fmt --diff` без записи и возвращает
+ненулевой код при отличиях. `fmt` применяет gofmt/goimports из `.golangci.yml`.
+ESLint проверяет исходники, Vite-конфигурацию и тесты,
 используя recommended-правила JavaScript, React и React Hooks. Версии npm-пакетов
 закреплены в package.json и package-lock.json; `npm run lint` из frontend
 доступен и без Make (в PowerShell при блокировке npm.ps1 используйте `npm.cmd`).
