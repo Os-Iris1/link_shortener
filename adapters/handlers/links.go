@@ -54,7 +54,7 @@ func (h *LinkHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		slog.Error("Не удалось сократить ссылку", "error", err)
+		slog.ErrorContext(ctx, "Не удалось сократить ссылку", "error", err)
 		writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{Error: "internal server error"})
 		return
 	}
@@ -73,5 +73,7 @@ func writeDecodeError(w http.ResponseWriter, err error) {
 func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		slog.Warn("Не удалось записать JSON-ответ", "status", status, "error", err)
+	}
 }

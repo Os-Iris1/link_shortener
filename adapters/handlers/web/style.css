@@ -8,6 +8,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
+.hidden { display: none !important; }
 button, input { font: inherit; }
 
 .shortener {

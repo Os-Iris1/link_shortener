@@ -17,6 +17,9 @@ import (
 
 func TestLinkServiceShorten(t *testing.T) {
 	failure := errors.New("dependency failed")
+	const prefix = "https://example.com/"
+	longURL := prefix + strings.Repeat("я", (8192-len(prefix))/len("я"))
+	longURL += strings.Repeat("a", 8192-len(longURL))
 	tests := []struct {
 		name     string
 		url      string
@@ -41,7 +44,11 @@ func TestLinkServiceShorten(t *testing.T) {
 		{name: "missing host", url: "https:///path", wantErr: cerrors.ErrInvalidURL},
 		{name: "credentials", url: "https://user:pass@example.com", wantErr: cerrors.ErrInvalidURL},
 		{name: "bad escape", url: "https://example.com/%zz", wantErr: cerrors.ErrInvalidURL},
-		{name: "too long", url: "https://example.com/" + strings.Repeat("a", 8192), wantErr: cerrors.ErrInvalidURL},
+		{name: "URL at byte limit", url: longURL, setup: func(r *mocks.MockLinkRepository, g *mocks.MockCodeGenerator) {
+			g.EXPECT().Generate().Return("abcdefghijkl", nil)
+			r.EXPECT().Save(gomock.Any(), models.Link{Code: "abcdefghijkl", URL: longURL}).Return(nil)
+		}, want: "https://short.example/abcdefghijkl"},
+		{name: "URL one byte over limit", url: longURL + "a", wantErr: cerrors.ErrInvalidURL},
 		{name: "canceled", url: "https://example.com", canceled: true, wantErr: context.Canceled},
 		{name: "generator error", url: "https://example.com", setup: func(_ *mocks.MockLinkRepository, g *mocks.MockCodeGenerator) {
 			g.EXPECT().Generate().Return("", failure)

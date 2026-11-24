@@ -29,8 +29,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Install golangci-lint
         run: |
           version=$(tr -d '\r\n' < .golangci-version)
@@ -47,38 +47,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-${{ github.sha }}
-          path: reports/
-          if-no-files-found: ignore
-          retention-days: 7
-
-  frontend:
-    name: CI frontend
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24.14.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - name: Install frontend dependencies
-        run: npm ci --prefix frontend
-      - name: Check frontend
-        run: |
-          mkdir -p reports
-          {
-            make lint-frontend
-            npm --prefix frontend run test:proxy
-            make frontend-build
-          } 2>&1 | tee reports/frontend.log
-      - name: Preserve frontend failure log
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: frontend-${{ github.sha }}
           path: reports/
           if-no-files-found: ignore
           retention-days: 7
