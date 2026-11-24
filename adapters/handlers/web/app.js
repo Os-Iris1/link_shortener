@@ -60,7 +60,7 @@ form.addEventListener('submit', async (event) => {
 
   setBusy(true);
   try {
-    const response = await fetch('/api/links', {
+    const response = await fetch('./api/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: value }),

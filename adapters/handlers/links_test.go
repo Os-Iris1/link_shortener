@@ -26,8 +26,9 @@ func TestRouterServesEmbeddedPage(t *testing.T) {
 	for _, tt := range []struct {
 		path, contentType, content string
 	}{
-		{"/", "text/html", `/assets/app.js`},
-		{"/assets/app.js", "text/javascript", `/api/links`},
+		{"/", "text/html", `href="./assets/style.css"`},
+		{"/", "text/html", `src="./assets/app.js"`},
+		{"/assets/app.js", "text/javascript", `fetch('./api/links'`},
 		{"/assets/style.css", "text/css", `.shortener`},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
