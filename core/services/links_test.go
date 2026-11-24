@@ -122,12 +122,29 @@ func TestNewLinkService(t *testing.T) {
 	}
 }
 
-func TestURLPorts(t *testing.T) {
+func TestURLHosts(t *testing.T) {
 	for _, tc := range []struct {
 		name, host string
 		valid      bool
 	}{
 		{"no_port", "example.com", true},
+		{"domain_with_numeric_label", "123.example.com", true},
+		{"ipv4", "192.0.2.1:8080", true},
+		{"ipv4_trailing_dot", "192.0.2.1.", true},
+		{"ipv4_short", "127.1", true},
+		{"ipv4_octal", "0177.0.0.1", true},
+		{"ipv4_hexadecimal", "0x7f000001", true},
+		{"ipv4_invalid_octet", "999.999.999.999", false},
+		{"ipv4_invalid_final_octet", "192.0.2.256", false},
+		{"ipv4_short_overflow", "127.16777216", false},
+		{"ipv4_decimal_overflow", "4294967296", false},
+		{"ipv4_hexadecimal_overflow", "0x100000000.", false},
+		{"ipv4_invalid_octal", "192.0.2.09", false},
+		{"ipv4_too_many_parts", "192.0.2.1.1", false},
+		{"ipv4_empty_part", "192..2.1", false},
+		{"ipv4_underscore", "0x7_f.1", false},
+		{"domain_ending_in_number", "example.123", false},
+		{"domain_ending_in_hexadecimal", "example.0x1", false},
 		{"minimum", "example.com:1", true},
 		{"http", "example.com:80", true},
 		{"https", "example.com:443", true},

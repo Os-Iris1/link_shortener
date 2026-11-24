@@ -72,6 +72,9 @@ func parseURL(value string) (*url.URL, error) {
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
 		return nil, cerrors.ErrInvalidURL
 	}
+	if !strings.HasPrefix(u.Host, "[") && !validNumericHost(u.Hostname()) {
+		return nil, cerrors.ErrInvalidURL
+	}
 	if port := u.Port(); port != "" {
 		number, err := strconv.ParseUint(port, decimalBase, portBitSize)
 		if err != nil || number == 0 {
