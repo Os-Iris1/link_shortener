@@ -13,14 +13,13 @@ import (
 	"time"
 )
 
-// TestLongRedirects runs against an explicitly supplied disposable Compose stack.
-// It creates links; never point SHORTER_TEST_PROXY_URL at a production database.
 const integrationHTTPTimeout = 10 * time.Second
 
+// TestLongRedirects creates links against an explicitly supplied disposable app.
 func TestLongRedirects(t *testing.T) {
-	base := os.Getenv("SHORTER_TEST_PROXY_URL")
+	base := os.Getenv("SHORTER_TEST_APP_URL")
 	if base == "" {
-		t.Skip("set SHORTER_TEST_PROXY_URL to an isolated nginx endpoint")
+		t.Skip("set SHORTER_TEST_APP_URL to an isolated Shorter endpoint")
 	}
 	client := &http.Client{Timeout: integrationHTTPTimeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	prefix, suffix := "https://example.com/", "?q=я&encoded=%23#я"

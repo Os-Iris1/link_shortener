@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Сокращение ссылок.">
+  <title>Shorter</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" type="module"></script>
+</head>
+<body>
+  <main class="shortener" aria-label="Сокращение ссылок">
+    <form aria-busy="false">
+      <div class="input-row">
+        <input id="url" aria-label="Исходная ссылка" type="url" inputmode="url" placeholder="https://example.com" required autocomplete="url">
+        <button type="submit" aria-label="Сократить ссылку" title="Сократить ссылку"><span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+    <div class="input-row result">
+      <input id="short-url" aria-label="Короткая ссылка" placeholder="Короткая ссылка" readonly>
+      <button id="copy" type="button" disabled aria-label="Копировать ссылку" title="Копировать ссылку">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <g id="copy-icon"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></g>
+          <path id="copied-icon" d="m5 12 4 4L19 6" class="hidden"/>
+        </svg>
+      </button>
+      <a id="open" class="icon-button hidden" target="_blank" rel="noreferrer" aria-label="Открыть ссылку" title="Открыть ссылку">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg>
+      </a>
+    </div>
+    <p id="status" class="sr-only" role="status" aria-atomic="true"></p>
+    <p id="form-error" class="error" role="alert" hidden></p>
+  </main>
+</body>
+</html>

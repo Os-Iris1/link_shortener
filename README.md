@@ -1,37 +1,17 @@
 # Shorter
 
+Сокращатель ссылок на Go и PostgreSQL. Один HTTP-процесс отдаёт страницу, API и редиректы. HTML, CSS и JavaScript встроены в Go-бинарник.
+
 ## GitHub Actions
 
-Workflow `.github/workflows/ci.yaml` запускается для push и pull request в
-`dev`/`stage`, а также вручную. Отдельные задания проверяют Go (gofmt,
-golangci-lint, test/cover, race, vet), frontend (ESLint, Vite proxy tests,
-сборка) и синтаксис Docker Compose с тестовыми параметрами без локального .env.
-Используются Ubuntu 24.04, Go из backend/go.mod, Node 24.14.0 и golangci-lint
-из .golangci-version. Версии внешних Actions закреплены SHA; кеши используют
-backend/go.sum и frontend/package-lock.json. При ошибке проверок сохраняются
-логи с ревизией в имени артефакта на 7 дней; ошибки установки видны в журнале Actions.
-
-`.golangci.yml` содержит правила Go-линтера, а `ci.yaml` описывает его запуск
-и остальные проверки на runner. Полные контейнерные и браузерные интеграции
-CI-002 пока не подключены: Compose здесь проверяет конфигурацию без запуска
-сервисов, а TestLongRedirects без SHORTER_TEST_PROXY_URL явно пропускается.
-Локальная проверка workflow: `actionlint .github/workflows/ci.yaml`.
-
-Для подключения загрузите принятую ветку в GitHub и убедитесь, что Actions
-разрешён в Settings → Actions → General. Первый удалённый запуск ещё требуется
-выполнить и проверить во вкладке Actions. После успешного запуска можно назначить
-`CI backend`, `CI frontend`, `CI compose config` обязательными проверками для
-dev/stage через Settings → Rules → Rulesets либо Branch protection, сохранив
-пользовательское review. Ручной запуск workflow_dispatch доступен после появления
-workflow в default branch. Автоматического слияния и развёртывания в workflow нет.
-
-Сокращатель ссылок: Go (`net/http`), PostgreSQL и pgx в backend, JavaScript и React в frontend. Реализованы создание коротких ссылок и переход по ним.
+Workflow `.github/workflows/ci.yaml` запускается для push и pull request в `dev` и `stage`, а также вручную. `CI backend` проверяет Go-модуль из корня, включая маршруты страницы. `CI compose config` проверяет Compose с тестовыми параметрами. Для обязательных проверок веток используйте эти два имени. Если раньше был обязателен `CI frontend`, уберите его из правил защиты веток при принятии изменений. Ручной запуск доступен после появления workflow в ветке по умолчанию.
 
 ## Структура
 
 ```text
-backend/           Go-модуль, cmd/shorter, core, adapters, Dockerfile
-frontend/          React, Vite, JavaScript, nginx, Dockerfile
+cmd/shorter/       точка входа приложения
+core/              модель, порты и сервисы
+adapters/          HTTP, встроенная страница и PostgreSQL
 migrate/           версионированные SQL-миграции up/down
 docs/              требования, архитектура и логи задач
 docker-compose.yaml
@@ -60,7 +40,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 ```sh
 docker compose config --quiet
-docker compose -f docker-compose.yaml up --build -d
+docker compose -f docker-compose.yaml up --build -d --remove-orphans
 docker compose -f docker-compose.yaml ps
 curl http://localhost:8080/healthz
 ```
@@ -75,29 +55,17 @@ docker compose -f docker-compose.yaml down
 
 Compose автоматически читает корневой `.env`; переменные окружения оболочки имеют приоритет над файлом. Например, `BASE_URL=http://localhost:5173 docker compose up --build -d backend` в shell; в PowerShell сначала `$env:BASE_URL = 'http://localhost:5173'`, затем `docker compose up --build -d backend`. После проверки удалите временное переопределение: `Remove-Item Env:BASE_URL` в PowerShell. Пустое значение пароля из окружения тоже вызывает ошибку, даже если в файле пароль заполнен.
 
-Для буквальных `$` и `#` используйте одинарные кавычки в `.env`: `POSTGRES_PASSWORD='your$own#password'` (это пример синтаксиса, задайте свой пароль). В одинарных кавычках Compose не подставляет `$VAR`, а `#` остаётся частью значения; кавычки в пароль не входят. Одинарную кавычку внутри такого значения экранируйте как `\'`. Для пароля из окружения также используйте одинарные кавычки оболочки. Не вставляйте пароль в URL подключения. `.env` и `.env.*` исключены из Git, кроме безопасного `.env.example`, а также из контекстов сборки backend и frontend. Параметры БД передаются только серверным контейнерам при запуске. Не публикуйте вывод `docker compose config` без `--quiet`: он содержит подставленные значения.
+Для буквальных `$` и `#` используйте одинарные кавычки в `.env`: `POSTGRES_PASSWORD='your$own#password'` (это пример синтаксиса, задайте свой пароль). В одинарных кавычках Compose не подставляет `$VAR`, а `#` остаётся частью значения; кавычки в пароль не входят. Одинарную кавычку внутри такого значения экранируйте как `\'`. Для пароля из окружения также используйте одинарные кавычки оболочки. Не вставляйте пароль в URL подключения. `.env` и `.env.*` исключены из Git, кроме безопасного `.env.example`, а также из контекста сборки. Параметры БД передаются только серверным контейнерам при запуске. Не публикуйте вывод `docker compose config` без `--quiet`: он содержит подставленные значения.
 
 Изменение `.env` **не меняет пароль уже созданной БД** в томе `postgres_data`. Для существующей базы сохраните действующие учётные данные либо отдельно измените пароль пользователя в PostgreSQL и согласуйте конфигурацию. Удаление рабочего тома для обновления пароля не требуется.
 
 Backend подключается к PostgreSQL через `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`. При запуске проверяет подключение, но не создаёт и не изменяет схему. `/healthz` проверяет только работу HTTP-сервера.
 
-## Интерфейс и разработка frontend
+## Интерфейс
 
-В http://localhost:3000 введите HTTP(S) URL, нажмите «Сократить», скопируйте результат или откройте ссылку. Форма показывает загрузку и ошибки. При успешном копировании видно сообщение «Ссылка скопирована». Если Clipboard API отсутствует или доступ запрещён, поле результата получает фокус, ссылка выделяется и появляется инструкция ручного копирования. Результат копирования озвучивается скринридером и сбрасывается при следующем сокращении. nginx отдаёт frontend, проксирует API и переходы в Go backend; CORS не требуется.
+Откройте http://localhost:3000, введите HTTP(S) URL и сократите ссылку. Поле результата позволяет скопировать и открыть ссылку. Если браузер не предоставляет доступ к буферу обмена, ссылка выделяется для ручного копирования.
 
-Для разработки нужны Node.js 24 LTS и npm:
-
-```sh
-cd frontend
-npm ci
-npm run dev
-```
-
-Откройте http://localhost:5173. Vite проксирует API в backend на `127.0.0.1:8080`; backend можно запустить через `docker compose up --build -d backend` из корня. При необходимости задайте `BASE_URL=http://localhost:5173` перед запуском Compose, чтобы результат открывался через Vite. По умолчанию Compose возвращает ссылки через nginx на порту 3000; для их открытия нужен также запущенный frontend-контейнер.
-
-Сборка: `npm run build` из `frontend`, результат — `frontend/dist`. Предпросмотр сборки: `npm run preview`, backend должен быть запущен. Зависимости закреплены в `package-lock.json`. Из корня также доступны `make frontend-install`, `make frontend-dev`, `make frontend-build`.
-
-Проверка маршрутизации Vite: `npm run test:proxy` из `frontend`. Тест запускает настоящие dev и preview с временным backend, проверяет короткие ссылки с query и без него, GET/HEAD, API, healthz и HTML. Используются свободные локальные порты и временная сборка; отдельный рабочий backend не требуется.
+Go отдаёт страницу и её ресурсы из `adapters/handlers/web`. После редактирования HTML, CSS или JavaScript пересоберите приложение. Оба порта Compose, 3000 и 8080, ведут к одному приложению. Флаг `--remove-orphans` убирает прежний контейнер nginx при первом обновлении, освобождая порт 3000. Том PostgreSQL сохраняется.
 
 ## Миграции
 
@@ -135,7 +103,7 @@ curl -i http://localhost:8080/api/links -H "Content-Type: application/json" -d '
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/links -ContentType application/json -Body '{"url":"https://example.com/path?q=1"}'
 ```
 
-Ответ в Compose: HTTP 201, `{"short_url":"http://localhost:3000/<код>"}`. Публичный адрес задаётся `BASE_URL` в окружении или `.env` для Compose. В Compose значение по умолчанию — `http://localhost:3000` (адрес nginx); при запуске Go напрямую — `http://localhost:8080`. При изменении пересоздайте backend. Существующий `.env` с `BASE_URL` имеет приоритет. Код содержит 12 символов base64url.
+Ответ в Compose: HTTP 201, `{"short_url":"http://localhost:3000/<код>"}`. Публичный адрес задаётся `BASE_URL` в окружении или `.env` для Compose. В Compose значение по умолчанию — `http://localhost:3000`; при запуске Go напрямую — `http://localhost:8080`. При изменении пересоздайте backend. Существующий `.env` с `BASE_URL` имеет приоритет. Код содержит 12 символов base64url.
 
 Поддерживаются абсолютные HTTP(S) URL без credentials, до 8192 байт. Повторный запрос создаёт отдельную ссылку. Некорректный запрос — 400, Content-Type — 415, тело больше 64 KiB — 413, ошибка сохранения — 500. Все ответы endpoint — JSON.
 
@@ -151,7 +119,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/links -ContentType
 curl -i http://localhost:8080/<код>
 ```
 
-`GET /<код>` возвращает `302 Found` и `Location` с исходным URL, включая query и fragment. `HEAD` возвращает тот же статус и заголовки без тела. Код регистрозависимый: ровно 12 символов `A-Z`, `a-z`, `0-9`, `_`, `-`. Неверный формат — 400, неизвестный код — 404, ошибка чтения или таймаут операции — 500; тело этих ошибок — JSON без внутренних подробностей. Другие методы для этого пути получают 405 с `Allow: GET, HEAD`. Пустой путь и лишние сегменты — 404. Таймаут чтения — 5 секунд. Настроенный в `BASE_URL` префикс пути должен удаляться обратным прокси перед передачей запроса backend.
+`GET /<код>` возвращает `302 Found` и `Location` с исходным URL, включая query и fragment. `HEAD` возвращает тот же статус и заголовки без тела. Код регистрозависимый: ровно 12 символов `A-Z`, `a-z`, `0-9`, `_`, `-`. Неверный формат — 400, неизвестный код — 404, ошибка чтения или таймаут операции — 500; тело этих ошибок — JSON без внутренних подробностей. Другие методы для этого пути получают 405 с `Allow: GET, HEAD`. Корневой путь отдаёт страницу. Лишние сегменты возвращают 404. Таймаут чтения — 5 секунд. Настроенный в `BASE_URL` префикс пути должен удаляться обратным прокси перед передачей запроса backend.
 
 ## Запуск и проверки Go
 
@@ -173,11 +141,10 @@ export PATH="$HOME/.local/bin:$PATH"
 исключениями, а генерируемый код распознаётся по стандартному заголовку. Проверка конфигурации:
 `golangci-lint config verify --config .golangci.yml` из корня.
 
-После `npm ci` в frontend из корня доступны команды (GNU Make на Windows и Linux):
+Из корня доступны команды (GNU Make на Windows и Linux):
 
 ```sh
 make lint-go
-make lint-frontend
 make lint
 make fmt-check
 make fmt
@@ -185,10 +152,6 @@ make fmt
 
 `fmt-check` проверяет формат через `golangci-lint fmt --diff` без записи и возвращает
 ненулевой код при отличиях. `fmt` применяет gofmt/goimports из `.golangci.yml`.
-ESLint проверяет исходники, Vite-конфигурацию и тесты,
-используя recommended-правила JavaScript, React и React Hooks. Версии npm-пакетов
-закреплены в package.json и package-lock.json; `npm run lint` из frontend
-доступен и без Make (в PowerShell при блокировке npm.ps1 используйте `npm.cmd`).
 Проверки не применяют автоматические исправления. Линтеры дополняют `make check`,
 который по-прежнему запускает обязательные test/cover, race и vet.
 
@@ -230,7 +193,6 @@ migrate -path ./migrate -database "postgres://localhost:5432?sslmode=disable" up
 Команда использует имя пользователя, пароль и базу из PG-переменных. Для удалённого сервера укажите его адрес и нужный режим TLS. Затем:
 
 ```sh
-cd backend
 go run ./cmd/shorter
 ```
 
@@ -241,7 +203,7 @@ make generate
 make check
 ```
 
-`make generate` обновляет gomock-моки портов; сгенерированные файлы хранятся в репозитории. Версия mockgen закреплена в `backend/go.mod`. `make check` выполняет из `backend` обязательные перед коммитом команды:
+`make generate` обновляет gomock-моки портов; сгенерированные файлы хранятся в репозитории. Версия mockgen закреплена в `go.mod`. `make check` выполняет из корня обязательные перед коммитом команды:
 
 ```sh
 go test ./... -cover
@@ -249,14 +211,17 @@ go test -race ./...
 go vet ./...
 ```
 
-Без Make выполните эти команды напрямую из `backend`. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
+Без Make выполните эти команды напрямую из корня. Проверки не должны пропускаться перед коммитом. Тесты сервисов и репозиториев — Table-Driven с gomock и pgxmock; для HTTP используется httptest.
 
 Адрес HTTP задаётся через `HTTP_ADDR` (по умолчанию `:8080`).
 
-Регрессия длинных редиректов через nginx запускается из `backend` на отдельном тестовом Compose-окружении: `SHORTER_TEST_PROXY_URL=http://127.0.0.1:3000 go test ./integration -run TestLongRedirects -count=1 -v`. В PowerShell сначала задайте `$env:SHORTER_TEST_PROXY_URL = 'http://127.0.0.1:3000'`, затем выполните ту же команду `go test`. Укажите фактический порт тестового nginx: проверка создаёт записи в БД. Без переменной этот интеграционный тест пропускается. Проверяются POST и GET/HEAD для ASCII и Unicode URL длиной 8192 байт, точный Location и отказ для URL сверх лимита. Буфер заголовка nginx рассчитан на увеличение Location до 24576 байт после percent-encoding.
+Регрессию длинных редиректов запускайте из корня на отдельном тестовом стенде:
 
-nginx разрешает имя `backend` через DNS Docker (`127.0.0.11`), кеширует ответ на 1 секунду и повторяет разрешение при следующих запросах. Таймаут DNS и подключения — по 2 секунды. После готовности нового backend и обновления DNS ожидается восстановление в пределах 5 секунд при регулярных запросах; время запуска самого backend в этот интервал не входит. Перезапуск nginx для смены IP не требуется. Путь и query передаются без подмены URI. Эта настройка рассчитана на сеть Docker Compose.
+```sh
+SHORTER_TEST_APP_URL=http://127.0.0.1:3000 go test ./integration -run TestLongRedirects -count=1 -v
+```
 
+В PowerShell сначала задайте `$env:SHORTER_TEST_APP_URL = 'http://127.0.0.1:3000'`, затем выполните ту же команду `go test`. Адрес должен указывать на тестовый Shorter: проверка создаёт записи. Без переменной тест пропускается. Проверяются GET/HEAD с предельными ASCII и Unicode URL и отказ для URL сверх лимита.
 
 Лимиты `CodeLength` и `MaxURLBytes` заданы в `core/models`. Генератор `Random`
 находится в `core/services`. HTTP-обработчик перехода вызывает `Resolve` через

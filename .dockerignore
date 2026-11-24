@@ -1,0 +1,13 @@
+.git
+.codex
+docs
+.worktrees
+.agents
+.aws
+frontend
+backend
+reports
+.env
+.env.*
+*.exe
+coverage*

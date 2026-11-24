@@ -21,6 +21,26 @@ import (
 	"shorter/core/services"
 )
 
+func TestRouterServesEmbeddedPage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	router := handlers.NewRouter(mocks.NewMockLinkShortener(ctrl), mocks.NewMockLinkResolver(ctrl))
+	for _, tt := range []struct {
+		path, contentType, content string
+	}{
+		{"/", "text/html", `/assets/app.js`},
+		{"/assets/app.js", "text/javascript", `/api/links`},
+		{"/assets/style.css", "text/css", `.shortener`},
+	} {
+		t.Run(tt.path, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, tt.path, nil))
+			if response.Code != http.StatusOK || !strings.HasPrefix(response.Header().Get("Content-Type"), tt.contentType) || !strings.Contains(response.Body.String(), tt.content) {
+				t.Fatalf("GET %s: status=%d Content-Type=%q", tt.path, response.Code, response.Header().Get("Content-Type"))
+			}
+		})
+	}
+}
+
 func TestShorten(t *testing.T) {
 	for _, tt := range []struct {
 		name, method, contentType, body string
@@ -142,7 +162,6 @@ func TestRedirect(t *testing.T) {
 		{name: "canceled", path: "/abcdefghijkl", code: "abcdefghijkl", call: true, serviceErr: context.Canceled, status: 500},
 		{name: "POST", method: "POST", path: "/abcdefghijkl", status: 405},
 		{name: "DELETE", method: "DELETE", path: "/abcdefghijkl", status: 405},
-		{name: "root", path: "/", status: 404},
 		{name: "extra segment", path: "/abcdefghijkl/extra", status: 404},
 		{name: "trailing slash", path: "/abcdefghijkl/", status: 404},
 	} {

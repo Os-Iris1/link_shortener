@@ -3,7 +3,7 @@
 !.env.example
 *.exe
 coverage.out
-backend/shorter
+/shorter
 frontend/node_modules/
 frontend/dist/
 

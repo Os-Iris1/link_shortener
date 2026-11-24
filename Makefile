@@ -1,46 +1,34 @@
-.PHONY: test race vet check generate build frontend-install frontend-dev frontend-build migrate-up migrate-down migrate-version
+.PHONY: test race vet check generate build migrate-up migrate-down migrate-version
 
 test:
-	cd backend && go test ./... -cover
+	go test ./... -cover
 
 race:
-	cd backend && go test -race ./...
+	go test -race ./...
 
 vet:
-	cd backend && go vet ./...
+	go vet ./...
 
 check: test race vet
 
-.PHONY: lint lint-go lint-frontend fmt-check fmt
+.PHONY: lint lint-go fmt-check fmt
 
-lint: lint-go lint-frontend
+lint: lint-go
 
 lint-go:
-	cd backend && golangci-lint run --config ../.golangci.yml ./...
-
-lint-frontend:
-	cd frontend && npm run lint
+	golangci-lint run --config .golangci.yml ./...
 
 fmt-check:
-	cd backend && golangci-lint fmt --config ../.golangci.yml --diff
+	golangci-lint fmt --config .golangci.yml --diff
 
 fmt:
-	cd backend && golangci-lint fmt --config ../.golangci.yml
+	golangci-lint fmt --config .golangci.yml
 
 generate:
-	cd backend && go generate ./core/ports
+	go generate ./core/ports
 
 build:
-	cd backend && go build ./cmd/shorter
-
-frontend-install:
-	cd frontend && npm ci
-
-frontend-dev:
-	cd frontend && npm run dev
-
-frontend-build:
-	cd frontend && npm run build
+	go build ./cmd/shorter
 
 migrate-up:
 	docker compose run --rm migrate up
