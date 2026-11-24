@@ -17,6 +17,7 @@ import (
 	"shorter/adapters/handlers"
 	cerrors "shorter/core/errors"
 	"shorter/core/ports/mocks"
+	"shorter/core/services"
 )
 
 func TestRouterServesEmbeddedPage(t *testing.T) {
@@ -94,6 +95,21 @@ func TestShorten(t *testing.T) {
 				t.Fatal("internal error exposed")
 			}
 		})
+	}
+}
+
+func TestShortenRejectsInvalidNumericHost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	service, err := services.NewLinkService(mocks.NewMockLinkRepository(ctrl), mocks.NewMockCodeGenerator(ctrl), "https://short.example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/links", strings.NewReader(`{"url":"https://999.999.999.999/"}`))
+	req.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	handlers.NewRouter(service, service).ServeHTTP(response, req)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
 	}
 }
 
