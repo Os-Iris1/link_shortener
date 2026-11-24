@@ -42,9 +42,16 @@ func TestRouterServesEmbeddedPage(t *testing.T) {
 }
 
 func TestShorten(t *testing.T) {
+	const (
+		bodyLimit = 64 << 10
+		validJSON = `{"url":"https://example.com"}`
+	)
+	atLimit := validJSON + strings.Repeat(" ", bodyLimit-len(validJSON))
+	invalidAtLimit := "!" + strings.Repeat(" ", bodyLimit-1)
 	for _, tt := range []struct {
 		name, contentType, body string
 		call                    bool
+		unknownLength           bool
 		url                     string
 		serviceErr              error
 		status                  int
@@ -60,7 +67,13 @@ func TestShorten(t *testing.T) {
 		{name: "trailing garbage", body: `{"url":"https://example.com"} broken`, status: 400},
 		{name: "wrong type", body: `{"url":42}`, status: 400},
 		{name: "empty body", status: 400},
-		{name: "too large", body: `{"url":"` + strings.Repeat("a", 65536) + `"}`, status: 413},
+		{name: "valid at limit", body: atLimit, call: true, url: "https://example.com", status: 201},
+		{name: "valid at limit without length", body: atLimit, unknownLength: true, call: true, url: "https://example.com", status: 201},
+		{name: "valid over limit", body: atLimit + " ", status: 413},
+		{name: "malformed at limit", body: invalidAtLimit, status: 400},
+		{name: "malformed at limit without length", body: invalidAtLimit, unknownLength: true, status: 400},
+		{name: "malformed over limit", body: invalidAtLimit + " ", status: 413},
+		{name: "malformed over limit without length", body: invalidAtLimit + " ", unknownLength: true, status: 413},
 		{name: "wrong content type", contentType: "text/plain", body: `{}`, status: 415},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,12 +88,18 @@ func TestShorten(t *testing.T) {
 				contentType = "application/json"
 			}
 			req := httptest.NewRequest(http.MethodPost, "/api/links", strings.NewReader(tt.body))
+			if tt.unknownLength {
+				req.ContentLength = -1
+			}
 			req.Header.Set("Content-Type", contentType)
 			response := httptest.NewRecorder()
 			mux := handlers.NewRouter(service, nil)
 			mux.ServeHTTP(response, req)
 			if response.Code != tt.status {
 				t.Fatalf("status = %d, want %d: %s", response.Code, tt.status, response.Body.String())
+			}
+			if got := response.Header().Get("Content-Type"); got != "application/json; charset=utf-8" {
+				t.Fatalf("Content-Type = %q, want JSON", got)
 			}
 			var body map[string]string
 			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
