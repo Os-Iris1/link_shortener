@@ -22,7 +22,7 @@ func Redirect(service ports.LinkResolver) http.HandlerFunc {
 		case errors.Is(err, cerrors.ErrLinkNotFound):
 			writeJSON(w, http.StatusNotFound, dto.ErrorResponse{Error: "link not found"})
 		case err != nil:
-			slog.Error("Не удалось получить ссылку", "error", err)
+			slog.ErrorContext(ctx, "Не удалось получить ссылку", "error", err)
 			writeJSON(w, http.StatusInternalServerError, dto.ErrorResponse{Error: "internal server error"})
 		default:
 			// URL shortening intentionally redirects to the stored, validated HTTP(S) destination.

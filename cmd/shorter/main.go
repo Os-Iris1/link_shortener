@@ -47,6 +47,7 @@ func run() error {
 	if err := pool.Ping(startupCtx); err != nil {
 		return fmt.Errorf("connect PostgreSQL: %w", err)
 	}
+	slog.Info("Соединение с PostgreSQL установлено")
 	repository := postgres.NewLinkRepository(pool)
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
@@ -67,7 +68,7 @@ func run() error {
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
 	}
-	slog.Info("HTTP-сервер запущен", "addr", addr)
+	slog.Info("Запуск HTTP-сервера", "addr", addr)
 	serverErrors := make(chan error, 1)
 	go func() { serverErrors <- server.ListenAndServe() }()
 	select {
@@ -77,12 +78,16 @@ func run() error {
 		}
 		return nil
 	case <-ctx.Done():
+		slog.Info("Остановка HTTP-сервера")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			_ = server.Close()
-			return err
+			if closeErr := server.Close(); closeErr != nil {
+				return errors.Join(fmt.Errorf("shutdown HTTP server: %w", err), fmt.Errorf("close HTTP server: %w", closeErr))
+			}
+			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
+		slog.Info("HTTP-сервер остановлен")
 		return nil
 	}
 }

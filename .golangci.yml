@@ -55,10 +55,6 @@ linters:
       - path: core/services/links_test.go
         linters: [gosec]
         text: G101
-      # Integration client targets an explicitly provided disposable test stack.
-      - path: integration/redirect_test.go
-        linters: [gosec]
-        text: G704
 formatters:
   enable: [gofmt, goimports]
   settings:
