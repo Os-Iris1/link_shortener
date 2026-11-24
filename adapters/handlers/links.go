@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -35,15 +36,16 @@ func (h *LinkHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	var request dto.ShortenRequest
-	if err := decoder.Decode(&request); err != nil {
-		writeDecodeError(w, err)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeBodyReadError(w, err)
 		return
 	}
-	if err := decoder.Decode(new(any)); err != io.EOF {
-		writeDecodeError(w, err)
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	var request dto.ShortenRequest
+	if err := decoder.Decode(&request); err != nil || decoder.Decode(new(any)) != io.EOF {
+		writeJSON(w, http.StatusBadRequest, dto.ErrorResponse{Error: "invalid JSON request"})
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), serviceTimeout)
@@ -61,7 +63,7 @@ func (h *LinkHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.ShortenResponse{ShortURL: shortURL})
 }
 
-func writeDecodeError(w http.ResponseWriter, err error) {
+func writeBodyReadError(w http.ResponseWriter, err error) {
 	var sizeError *http.MaxBytesError
 	if errors.As(err, &sizeError) {
 		writeJSON(w, http.StatusRequestEntityTooLarge, dto.ErrorResponse{Error: "request body too large"})
