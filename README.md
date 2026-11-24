@@ -169,8 +169,8 @@ export PATH="$HOME/.local/bin:$PATH"
 На Windows установите архив `golangci-lint-2.12.2-windows-amd64.zip` из
 [официального релиза](https://github.com/golangci/golangci-lint/releases/tag/v2.12.2),
 распакуйте и добавьте каталог с exe в PATH. Проверьте `golangci-lint version`.
-Правила: govet, staticcheck, errcheck, ineffassign и unused; тесты проверяются,
-генерируемый код распознаётся по стандартному заголовку. Схема конфигурации:
+Набор анализаторов задан в `.golangci.yml`. Тесты проверяются с указанными там
+исключениями, а генерируемый код распознаётся по стандартному заголовку. Проверка конфигурации:
 `golangci-lint config verify --config .golangci.yml` из корня.
 
 После `npm ci` в frontend из корня доступны команды (GNU Make на Windows и Linux):
@@ -258,4 +258,7 @@ go vet ./...
 nginx разрешает имя `backend` через DNS Docker (`127.0.0.11`), кеширует ответ на 1 секунду и повторяет разрешение при следующих запросах. Таймаут DNS и подключения — по 2 секунды. После готовности нового backend и обновления DNS ожидается восстановление в пределах 5 секунд при регулярных запросах; время запуска самого backend в этот интервал не входит. Перезапуск nginx для смены IP не требуется. Путь и query передаются без подмены URI. Эта настройка рассчитана на сеть Docker Compose.
 
 
-Backend: ?????? CodeLength ? MaxURLBytes ?????????? ? core/models; ????????? services.Random ????????? ? core/services. Resolve ???????????? HTTP-?????????? ????? LinkResolver. Unit-????? ?????????? ? links_test.go ???????? ??? services, handlers ? postgres; ?????????????? ????? ???????? ?????????. golangci-lint ?????????? ???????????? v2 ? ????????? ?????? ? ??????????? ??????????? ????????; gofmt/goimports ???????? ????? `golangci-lint fmt --config .golangci.yml`.
+Лимиты `CodeLength` и `MaxURLBytes` заданы в `core/models`. Генератор `Random`
+находится в `core/services`. HTTP-обработчик перехода вызывает `Resolve` через
+`LinkResolver`. Модульные тесты собраны в `links_test.go` каждого пакета
+(`services`, `handlers`, `postgres`). Интеграционные тесты находятся в отдельном пакете.
