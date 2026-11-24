@@ -13,10 +13,18 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"shorter/adapters/codegen"
 	"shorter/adapters/handlers"
 	"shorter/adapters/repositories/postgres"
 	"shorter/core/services"
+)
+
+const (
+	startupTimeout    = 15 * time.Second
+	shutdownTimeout   = 5 * time.Second
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 10 * time.Second
+	writeTimeout      = 15 * time.Second
+	idleTimeout       = 60 * time.Second
 )
 
 func main() {
@@ -29,7 +37,7 @@ func main() {
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	startupCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	startupCtx, cancel := context.WithTimeout(ctx, startupTimeout)
 	defer cancel()
 	pool, err := pgxpool.New(startupCtx, "")
 	if err != nil {
@@ -44,7 +52,7 @@ func run() error {
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
-	service, err := services.NewLinkService(repository, codegen.Random{}, baseURL)
+	service, err := services.NewLinkService(repository, services.Random{}, baseURL)
 	if err != nil {
 		return err
 	}
@@ -54,10 +62,10 @@ func run() error {
 	}
 	server := &http.Server{
 		Addr: addr, Handler: handlers.NewRouter(service, service),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 	slog.Info("HTTP-сервер запущен", "addr", addr)
 	serverErrors := make(chan error, 1)
@@ -69,7 +77,7 @@ func run() error {
 		}
 		return nil
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
 			_ = server.Close()

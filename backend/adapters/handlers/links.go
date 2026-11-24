@@ -15,6 +15,11 @@ import (
 	"shorter/core/ports"
 )
 
+const (
+	serviceTimeout      = 5 * time.Second
+	maxRequestBodyBytes = 64 << 10
+)
+
 type LinkHandler struct {
 	service ports.LinkShortener
 }
@@ -29,7 +34,7 @@ func (h *LinkHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnsupportedMediaType, dto.ErrorResponse{Error: "Content-Type must be application/json"})
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	var request dto.ShortenRequest
@@ -41,7 +46,7 @@ func (h *LinkHandler) Shorten(w http.ResponseWriter, r *http.Request) {
 		writeDecodeError(w, err)
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), serviceTimeout)
 	defer cancel()
 	shortURL, err := h.service.Shorten(ctx, request.URL)
 	if errors.Is(err, cerrors.ErrInvalidURL) {

@@ -22,10 +22,10 @@ lint-frontend:
 	cd frontend && npm run lint
 
 fmt-check:
-	go run ./scripts/go-format.go
+	cd backend && golangci-lint fmt --config ../.golangci.yml --diff
 
 fmt:
-	go run ./scripts/go-format.go --write
+	cd backend && golangci-lint fmt --config ../.golangci.yml
 
 generate:
 	cd backend && go generate ./core/ports

@@ -169,8 +169,8 @@ export PATH="$HOME/.local/bin:$PATH"
 На Windows установите архив `golangci-lint-2.12.2-windows-amd64.zip` из
 [официального релиза](https://github.com/golangci/golangci-lint/releases/tag/v2.12.2),
 распакуйте и добавьте каталог с exe в PATH. Проверьте `golangci-lint version`.
-Правила: govet, staticcheck, errcheck, ineffassign и unused; тесты проверяются,
-генерируемый код распознаётся по стандартному заголовку. Схема конфигурации:
+Набор анализаторов задан в `.golangci.yml`. Тесты проверяются с указанными там
+исключениями, а генерируемый код распознаётся по стандартному заголовку. Проверка конфигурации:
 `golangci-lint config verify --config .golangci.yml` из корня.
 
 После `npm ci` в frontend из корня доступны команды (GNU Make на Windows и Linux):
@@ -183,8 +183,9 @@ make fmt-check
 make fmt
 ```
 
-`fmt-check` проверяет Go без записи; CRLF checkout в Windows допускается.
-`fmt` явно применяет gofmt. ESLint проверяет исходники, Vite-конфигурацию и тесты,
+`fmt-check` проверяет формат через `golangci-lint fmt --diff` без записи и возвращает
+ненулевой код при отличиях. `fmt` применяет gofmt/goimports из `.golangci.yml`.
+ESLint проверяет исходники, Vite-конфигурацию и тесты,
 используя recommended-правила JavaScript, React и React Hooks. Версии npm-пакетов
 закреплены в package.json и package-lock.json; `npm run lint` из frontend
 доступен и без Make (в PowerShell при блокировке npm.ps1 используйте `npm.cmd`).
@@ -255,3 +256,9 @@ go vet ./...
 Регрессия длинных редиректов через nginx запускается из `backend` на отдельном тестовом Compose-окружении: `SHORTER_TEST_PROXY_URL=http://127.0.0.1:3000 go test ./integration -run TestLongRedirects -count=1 -v`. В PowerShell сначала задайте `$env:SHORTER_TEST_PROXY_URL = 'http://127.0.0.1:3000'`, затем выполните ту же команду `go test`. Укажите фактический порт тестового nginx: проверка создаёт записи в БД. Без переменной этот интеграционный тест пропускается. Проверяются POST и GET/HEAD для ASCII и Unicode URL длиной 8192 байт, точный Location и отказ для URL сверх лимита. Буфер заголовка nginx рассчитан на увеличение Location до 24576 байт после percent-encoding.
 
 nginx разрешает имя `backend` через DNS Docker (`127.0.0.11`), кеширует ответ на 1 секунду и повторяет разрешение при следующих запросах. Таймаут DNS и подключения — по 2 секунды. После готовности нового backend и обновления DNS ожидается восстановление в пределах 5 секунд при регулярных запросах; время запуска самого backend в этот интервал не входит. Перезапуск nginx для смены IP не требуется. Путь и query передаются без подмены URI. Эта настройка рассчитана на сеть Docker Compose.
+
+
+Лимиты `CodeLength` и `MaxURLBytes` заданы в `core/models`. Генератор `Random`
+находится в `core/services`. HTTP-обработчик перехода вызывает `Resolve` через
+`LinkResolver`. Модульные тесты собраны в `links_test.go` каждого пакета
+(`services`, `handlers`, `postgres`). Интеграционные тесты находятся в отдельном пакете.

@@ -1,13 +1,66 @@
 version: "2"
 run:
-  timeout: 5m
+  concurrency: 4
+  timeout: 10m
+  tests: true
 linters:
   default: none
   enable:
-    - govet
+    - gosec
+    - unused
     - staticcheck
+    - govet
     - errcheck
     - ineffassign
-    - unused
+    - bodyclose
+    - revive
+    - unconvert
+    - goconst
+    - gocyclo
+    - gocognit
+    - asciicheck
+    - misspell
+    - unparam
+    - dogsled
+    - nakedret
+    - prealloc
+    - gocritic
+    - gochecknoinits
+    - gochecknoglobals
+    - whitespace
+    - godot
+    - testpackage
+    - copyloopvar
+    - mnd
+  settings:
+    revive:
+      rules:
+        # Public API comments are maintained separately from correctness checks.
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+    gocyclo:
+      min-complexity: 25
   exclusions:
     generated: strict
+    rules:
+      # Table-driven tests intentionally contain literal inputs and expected values.
+      - path: _test\.go
+        linters: [gocyclo, gocognit, goconst, mnd]
+      # Stable sentinel errors are package-level variables by design.
+      - path: core/errors/errors.go
+        linters: [gochecknoglobals]
+      # Deliberately invalid credentials exercise rejection; these are not secrets.
+      - path: core/services/links_test.go
+        linters: [gosec]
+        text: G101
+      # Integration client targets an explicitly provided disposable test stack.
+      - path: integration/redirect_test.go
+        linters: [gosec]
+        text: G704
+formatters:
+  enable: [gofmt, goimports]
+  settings:
+    goimports:
+      local-prefixes: [shorter]
